@@ -8,12 +8,17 @@ import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.Autos;
 import frc.robot.commands.ExampleCommand;
 import frc.robot.subsystems.ExampleSubsystem;
+import frc.robot.utils.ButtonBoard;
+import frc.robot.utils.ButtonBoard.joystickAxis;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.event.EventLoop;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -29,11 +34,12 @@ public class RobotContainer {
   private final ExampleSubsystem m_exampleSubsystem = new ExampleSubsystem();
 
   // Replace with CommandPS4Controller or CommandJoystick if needed
-  private final GenericHID buttonBoard = new GenericHID(Constants.OperatorConstants.buttonBoardPort);  
+  private final ButtonBoard demoBoard = new ButtonBoard(0);
 
   //i made these just to see inside the classes.
   private final Joystick test = new Joystick(2);
   private final CommandXboxController xboxController = new CommandXboxController(3);
+
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -53,19 +59,19 @@ public class RobotContainer {
   private void configureBindings() {
     // Schedule `ExampleCommand` when `exampleCondition` changes to `true`
 
+    //input examples
+    demoBoard.k1()
+      .onTrue(new InstantCommand(()-> System.out.println("this is button 1")));
 
-    //shows how to bind button w/ instant command
-    final JoystickButton buttonK1 = new JoystickButton(buttonBoard, 1);
-    InstantCommand sayHello = new InstantCommand(()-> System.out.println("hello"));
-    buttonK1.onTrue(sayHello);
+    demoBoard.k2()
+      .onTrue(new InstantCommand(()-> System.out.println("this is button 2")));
 
-    //inline instant command
-    final JoystickButton buttonk2 = new JoystickButton(buttonBoard, 2);
-    buttonk2.onTrue(new InstantCommand(()-> System.out.println("hiiiiii")));
-
-    //binding a command on a joystick threshold. To drive, you probably need to use getRawAxis() when calling drive()
-    Trigger joystickTest = new Trigger(()-> buttonBoard.getRawAxis(0) > 0.5);
-    joystickTest.whileTrue(sayHello);
+    demoBoard.k1().and(demoBoard.k2())
+         .whileTrue(new RunCommand(()-> System.out.println("X: " + demoBoard.getX())) //gets the value of the joystick X
+         .alongWith((new RunCommand(()->System.out.println("Y: " + demoBoard.getJoystickAxis(joystickAxis.kY)))))); //overcomplicated way to get a joystick Y. I added this because I could.
+    
+    new Trigger(demoBoard.axisLessThan(joystickAxis.kY.value, -0.5)).onTrue(new InstantCommand(()->System.out.println("Moving forward!")));
+  
   }
 
   /**
